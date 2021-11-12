@@ -1,0 +1,85 @@
+version: '3'
+services:
+
+ project-php:
+  build:
+   context: .
+   dockerfile: DockerfileProjectPhp
+  image: project-php
+  container_name: project-php
+  restart: unless-stopped
+  tty: true  
+  ports:
+   - "9000:9000"   
+  working_dir: /project
+  volumes:
+   - ./project:/project
+   - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+  networks:
+   - my-project
+
+ project-node:
+  build:
+   context: .
+   dockerfile: DockerfileProjectNode
+  image: project-node
+  container_name: project-node
+  restart: unless-stopped
+  tty: true
+  ports:
+   - "3001:3001"       
+   - "3000:3000"
+  volumes:
+   - ./project:/project
+  networks:
+   - my-project
+
+ webserver:
+  image: nginx:alpine
+  container_name: webserver  
+  restart: unless-stopped
+  tty: true
+  ports:
+   - "80:80" 
+   - "8000:8000" 
+  volumes:
+   - ./project:/project
+   - ./nginx/:/etc/nginx/conf.d/
+  networks:
+   - my-project
+
+ database:
+  image: mysql:5.7.22
+  container_name: database
+  restart: unless-stopped
+  tty: true
+  ports:
+   - "3306:3306"
+  environment:
+   MYSQL_DATABASE: testing
+   MYSQL_ROOT_PASSWORD: root
+  volumes:
+   - ./database:/var/lib/mysql/
+   - ./mysql/my.cnf:/etc/mysql/my.cnf
+  networks:
+   - my-project
+
+ phpmyadmin:
+  image: phpmyadmin
+  container_name: phpmyadmin
+  restart: always
+  tty: true
+  ports:
+   - "8080:80"
+  environment:
+   PMA_ARBITRARY: 1
+   PMA_HOST: database
+   PMA_PORT: 3306
+   PMA_USER: root
+   PMA_PASSWORD: root
+  networks:
+   - my-project
+
+networks:
+ my-project:
+  driver: bridge
